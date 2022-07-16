@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+var (
+	dictionary *Dictionary
+)
+
 type (
 	Config struct {
 		WordsZipFile string
@@ -14,16 +18,6 @@ type (
 	}
 
 	Boggle struct {
-		dictionary *Dictionary
-		board      [][]string
-		visited    [][]bool
-		score      int
-		found      map[string]struct{}
-		m          int
-		n          int
-	}
-
-	Game struct {
 		board   [][]string
 		visited [][]bool
 		score   int
@@ -40,11 +34,10 @@ type (
 
 func New(cfg Config) (*Boggle, error) {
 	var (
-		m          int
-		n          int
-		visited    [][]bool
-		dictionary *Dictionary
-		err        error
+		m       int
+		n       int
+		visited [][]bool
+		err     error
 	)
 
 	if len(cfg.Board) == 0 {
@@ -69,18 +62,19 @@ func New(cfg Config) (*Boggle, error) {
 		visited[i] = make([]bool, n)
 	}
 
-	dictionary, err = newDictionary(cfg.WordsZipFile)
-	if err != nil {
-		return nil, fmt.Errorf("faild to create new dictionary: %w", err)
+	if dictionary == nil {
+		dictionary, err = newDictionary(cfg.WordsZipFile)
+		if err != nil {
+			return nil, fmt.Errorf("faild to create new dictionary: %w", err)
+		}
 	}
 
 	return &Boggle{
-		found:      make(map[string]struct{}),
-		board:      cfg.Board,
-		visited:    visited,
-		dictionary: dictionary,
-		m:          m,
-		n:          n,
+		found:   make(map[string]struct{}),
+		board:   cfg.Board,
+		visited: visited,
+		m:       m,
+		n:       n,
 	}, nil
 }
 
@@ -92,7 +86,7 @@ func (b *Boggle) Solve() *Result {
 			str := b.board[i][j]
 			index := []byte(str)[0] - 'a'
 
-			if node := b.dictionary.RootNode.Children[index]; node != nil {
+			if node := dictionary.RootNode.Children[index]; node != nil {
 				b.findWords(i, j, runningString+str, node)
 			}
 		}
