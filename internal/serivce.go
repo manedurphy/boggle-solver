@@ -29,6 +29,11 @@ func New() *Service {
 	return &Service{}
 }
 
+func (s *Service) Healthz(c echo.Context) error {
+	fmt.Println("service is healthy")
+	return c.NoContent(http.StatusOK)
+}
+
 func (s *Service) Solve(c echo.Context) error {
 	var (
 		b          *boggle.Boggle

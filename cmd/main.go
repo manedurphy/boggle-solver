@@ -15,6 +15,7 @@ func main() {
 	app = echo.New()
 	svc = service.New()
 
+	app.GET("/", svc.Healthz)
 	app.POST("/solve", svc.Solve)
 	panic(app.Start(":8080"))
 }
