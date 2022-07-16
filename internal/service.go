@@ -53,7 +53,10 @@ func (s *Service) Solve(c echo.Context) error {
 	}
 	s.cfg.Logger.Debug("boggle board", "board", req.Board)
 
-	b, err = boggle.New(req.Board)
+	b, err = boggle.New(boggle.Config{
+		Board:        req.Board,
+		WordsZipFile: "/home/dane/Documents/interview_prep/assessments/rstudio/data/words.zip",
+	})
 	if err != nil {
 		s.cfg.Logger.With("err", err, "board", req.Board).Error("could not create new boggle game")
 		return c.JSON(http.StatusBadRequest, &ErrorMessage{

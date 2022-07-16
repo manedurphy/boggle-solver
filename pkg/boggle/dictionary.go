@@ -32,7 +32,7 @@ func newNode(char string) *Node {
 	}
 }
 
-func newDictionary() (*Dictionary, error) {
+func newDictionary(wordsFilePath string) (*Dictionary, error) {
 	var (
 		trie      *Dictionary
 		zipReader *zip.ReadCloser
@@ -43,7 +43,7 @@ func newDictionary() (*Dictionary, error) {
 		RootNode: newNode(ROOT),
 	}
 
-	zipReader, err = zip.OpenReader("")
+	zipReader, err = zip.OpenReader(wordsFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("could not read zip file: %w", err)
 	}

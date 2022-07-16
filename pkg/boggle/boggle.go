@@ -8,6 +8,11 @@ import (
 )
 
 type (
+	Config struct {
+		WordsZipFile string
+		Board        [][]string
+	}
+
 	Boggle struct {
 		dictionary *Dictionary
 		board      [][]string
@@ -18,13 +23,22 @@ type (
 		n          int
 	}
 
+	Game struct {
+		board   [][]string
+		visited [][]bool
+		score   int
+		found   map[string]struct{}
+		m       int
+		n       int
+	}
+
 	Result struct {
 		WordsFound []string `json:"words_found"`
 		Score      int      `json:"score"`
 	}
 )
 
-func New(board [][]string) (*Boggle, error) {
+func New(cfg Config) (*Boggle, error) {
 	var (
 		m          int
 		n          int
@@ -33,20 +47,20 @@ func New(board [][]string) (*Boggle, error) {
 		err        error
 	)
 
-	if len(board) == 0 {
-		return nil, errors.New("board is invalid")
+	if len(cfg.Board) == 0 {
+		return nil, errors.New("cfg.Board is invalid")
 	}
 
-	m = len(board)
-	n = len(board[0])
+	m = len(cfg.Board)
+	n = len(cfg.Board[0])
 
-	if !isValidBoard(board, n) {
+	if !isValidBoard(cfg.Board, n) {
 		return nil, errors.New("board is imbalanced")
 	}
 
-	for idx, row := range board {
+	for idx, row := range cfg.Board {
 		for jdx, val := range row {
-			board[idx][jdx] = strings.ToLower(val)
+			cfg.Board[idx][jdx] = strings.ToLower(val)
 		}
 	}
 
@@ -55,14 +69,14 @@ func New(board [][]string) (*Boggle, error) {
 		visited[i] = make([]bool, n)
 	}
 
-	dictionary, err = newDictionary()
+	dictionary, err = newDictionary(cfg.WordsZipFile)
 	if err != nil {
 		return nil, fmt.Errorf("faild to create new dictionary: %w", err)
 	}
 
 	return &Boggle{
 		found:      make(map[string]struct{}),
-		board:      board,
+		board:      cfg.Board,
 		visited:    visited,
 		dictionary: dictionary,
 		m:          m,
