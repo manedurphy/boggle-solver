@@ -7,21 +7,27 @@ import (
 )
 
 type Boggle struct {
+	dictionary *Dictionary
 	board      [][]string
 	visited    [][]bool
 	found      map[string]struct{}
 	m          int
 	n          int
-	dictionary *Trie
 }
 
 func New(board [][]string) (*Boggle, error) {
+	var (
+		m       int
+		n       int
+		visited [][]bool
+	)
+
 	if len(board) == 0 {
 		return nil, errors.New("board is invalid")
 	}
 
-	m := len(board)
-	n := len(board[0])
+	m = len(board)
+	n = len(board[0])
 
 	for idx, row := range board {
 		for jdx, val := range row {
@@ -29,7 +35,7 @@ func New(board [][]string) (*Boggle, error) {
 		}
 	}
 
-	visited := make([][]bool, m)
+	visited = make([][]bool, m)
 	for i := range visited {
 		visited[i] = make([]bool, n)
 	}
@@ -38,7 +44,7 @@ func New(board [][]string) (*Boggle, error) {
 		found:      make(map[string]struct{}),
 		board:      board,
 		visited:    visited,
-		dictionary: NewTrie(),
+		dictionary: newDictionary(),
 		m:          m,
 		n:          n,
 	}, nil
@@ -52,6 +58,7 @@ func (b *Boggle) Solve() []string {
 		for j := 0; j < b.n; j++ {
 			str := b.board[i][j]
 			index := []byte(str)[0] - 'a'
+
 			if node := b.dictionary.RootNode.Children[index]; node != nil {
 				b.findWords(i, j, runningString+str, node)
 			}
@@ -63,7 +70,7 @@ func (b *Boggle) Solve() []string {
 }
 
 func (b *Boggle) findWords(i, j int, runningString string, node *Node) {
-	if node.IsWord && len(runningString) >= 3 {
+	if node.IsWord() && len(runningString) >= 3 {
 		b.found[runningString] = struct{}{}
 	}
 

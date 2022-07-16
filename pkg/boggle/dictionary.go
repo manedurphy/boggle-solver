@@ -29,37 +29,37 @@ var dictionary = map[string]struct{}{
 
 type (
 	Node struct {
-		Char     string
-		IsWord   bool
+		char     string
+		isWord   bool
 		Children [SIZE]*Node
 	}
 
-	Trie struct {
+	Dictionary struct {
 		RootNode *Node
 	}
 )
 
-func NewNode(char string) *Node {
+func newNode(char string) *Node {
 	return &Node{
-		Char:   char,
-		IsWord: false,
+		char:   char,
+		isWord: false,
 	}
 }
 
-func NewTrie() *Trie {
-	trie := &Trie{
-		RootNode: NewNode(ROOT),
+func newDictionary() *Dictionary {
+	trie := &Dictionary{
+		RootNode: newNode(ROOT),
 	}
 
 	for word := range dictionary {
-		trie.Insert(word)
+		trie.insert(word)
 	}
 
 	return trie
 }
 
-func (t *Trie) Insert(word string) {
-	current := t.RootNode
+func (d *Dictionary) insert(word string) {
+	current := d.RootNode
 	strippedWord := strings.ToLower(strings.ReplaceAll(word, " ", ""))
 
 	for i := 0; i < len(strippedWord); i++ {
@@ -67,16 +67,16 @@ func (t *Trie) Insert(word string) {
 		index := strippedWord[i] - 'a'
 
 		if current.Children[index] == nil {
-			current.Children[index] = NewNode(char)
+			current.Children[index] = newNode(char)
 		}
 
 		current = current.Children[index]
 	}
-	current.IsWord = true
+	current.isWord = true
 }
 
-func (t *Trie) SearchWord(word string) bool {
-	current := t.RootNode
+func (d *Dictionary) searchWord(word string) bool {
+	current := d.RootNode
 	strippedWord := strings.ToLower(strings.ReplaceAll(word, " ", ""))
 
 	for i := 0; i < len(strippedWord); i++ {
@@ -88,39 +88,9 @@ func (t *Trie) SearchWord(word string) bool {
 		current = current.Children[index]
 	}
 
-	return current.IsWord
+	return current.isWord
 }
 
-/*
-func (t *Trie) SearchWord(i, j int, word string, visited [][]bool) bool {
-	current := t.RootNode
-	strippedWord := strings.ToLower(strings.ReplaceAll(word, " ", ""))
-
-	if t.isSafe(i, j, 3, 3, visited) {
-		visited[i][j] = true
-
-		for k := 0; k < SIZE; k++ {
-			if t.RootNode.Children[k] != nil {
-				if t.isSafe(i+1, j+1, 3, 3, visited) {
-					strippedWord +
-				}
-			}
-		}
-
-		for i := 0; i < len(strippedWord); i++ {
-			index := strippedWord[i] - 'a'
-
-			if current == nil || current.Children[index] == nil {
-				return false
-			}
-			current = current.Children[index]
-		}
-	}
-
-	return true
+func (n *Node) IsWord() bool {
+	return n.isWord
 }
-
-func (t *Trie) isSafe(i, j, m, n int, visited [][]bool) bool {
-	return i >= 0 && i < m && j >= 0 && j < n && !visited[i][j]
-}
-*/
