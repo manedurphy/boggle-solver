@@ -13,39 +13,43 @@ const (
 	ROOT = "root"
 )
 
+var (
+	dictionary *dictionaryRoot
+)
+
 type (
-	Node struct {
+	node struct {
 		char     string
 		isWord   bool
-		Children [SIZE]*Node
+		children [SIZE]*node
 	}
 
-	Dictionary struct {
-		RootNode *Node
+	dictionaryRoot struct {
+		RootNode *node
 	}
 )
 
-func newNode(char string) *Node {
-	return &Node{
+func newNode(char string) *node {
+	return &node{
 		char:   char,
 		isWord: false,
 	}
 }
 
-func newDictionary(wordsFilePath string) (*Dictionary, error) {
+func InitDictionary(wordsFilePath string) error {
 	var (
-		trie      *Dictionary
+		dRoot     *dictionaryRoot
 		zipReader *zip.ReadCloser
 		err       error
 	)
 
-	trie = &Dictionary{
+	dRoot = &dictionaryRoot{
 		RootNode: newNode(ROOT),
 	}
 
 	zipReader, err = zip.OpenReader(wordsFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("could not read zip file: %w", err)
+		return fmt.Errorf("could not read zip file: %w", err)
 	}
 	defer zipReader.Close()
 
@@ -58,20 +62,21 @@ func newDictionary(wordsFilePath string) (*Dictionary, error) {
 
 		file, err = zipfile.Open()
 		if err != nil {
-			return nil, fmt.Errorf("could not read file content: %w", err)
+			return fmt.Errorf("could not read file content: %w", err)
 		}
 
 		scanner = bufio.NewScanner(file)
 		for scanner.Scan() {
 			word := strings.ToLower(strings.ReplaceAll(scanner.Text(), " ", ""))
-			trie.insert(word)
+			dRoot.insert(word)
 		}
 	}
 
-	return trie, nil
+	dictionary = dRoot
+	return nil
 }
 
-func (d *Dictionary) insert(word string) {
+func (d *dictionaryRoot) insert(word string) {
 	current := d.RootNode
 	strippedWord := strings.ToLower(strings.ReplaceAll(word, " ", ""))
 
@@ -79,11 +84,11 @@ func (d *Dictionary) insert(word string) {
 		char := string(strippedWord[i])
 		index := strippedWord[i] - 'a'
 
-		if current.Children[index] == nil {
-			current.Children[index] = newNode(char)
+		if current.children[index] == nil {
+			current.children[index] = newNode(char)
 		}
 
-		current = current.Children[index]
+		current = current.children[index]
 	}
 	current.isWord = true
 }

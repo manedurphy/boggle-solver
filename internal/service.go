@@ -37,9 +37,14 @@ func New(cfg Config) *Service {
 	}
 }
 
+func (s *Service) Healthz(c echo.Context) error {
+	s.cfg.Logger.With("func", "Healthz").Info("service is healthy")
+	return c.NoContent(http.StatusOK)
+}
+
 func (s *Service) Solve(c echo.Context) error {
 	var (
-		b      *boggle.Boggle
+		b      boggle.Boggle
 		result *boggle.Result
 		req    SolveRequest
 		err    error
@@ -54,10 +59,7 @@ func (s *Service) Solve(c echo.Context) error {
 	}
 	s.cfg.Logger.Debug("boggle board", "board", req.Board)
 
-	b, err = boggle.New(boggle.Config{
-		Board:        req.Board,
-		WordsZipFile: s.cfg.WordsZipFile,
-	})
+	b, err = boggle.New(req.Board)
 	if err != nil {
 		s.cfg.Logger.With("err", err, "board", req.Board).Error("could not create new boggle game")
 		return c.JSON(http.StatusBadRequest, &ErrorMessage{
