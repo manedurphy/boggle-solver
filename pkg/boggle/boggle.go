@@ -3,31 +3,16 @@ package boggle
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
-var dictionary = map[string]struct{}{
-	"DATA":        {},
-	"SCIENCE":     {},
-	"SOFTWARE":    {},
-	"ENGINEERING": {},
-	"GOLANG":      {},
-	"RUST":        {},
-	"PLEASE":      {},
-	"EXCUSE":      {},
-	"MY":          {},
-	"DEAR":        {},
-	"AUNT":        {},
-	"SALLY":       {},
-	"BOGGLE":      {},
-	"PLAY":        {},
-}
-
 type Boggle struct {
-	found   map[string]struct{}
-	board   [][]string
-	visited [][]bool
-	m       int
-	n       int
+	board      [][]string
+	visited    [][]bool
+	found      map[string]struct{}
+	m          int
+	n          int
+	dictionary *Trie
 }
 
 func New(board [][]string) (*Boggle, error) {
@@ -38,17 +23,24 @@ func New(board [][]string) (*Boggle, error) {
 	m := len(board)
 	n := len(board[0])
 
+	for idx, row := range board {
+		for jdx, val := range row {
+			board[idx][jdx] = strings.ToLower(val)
+		}
+	}
+
 	visited := make([][]bool, m)
 	for i := range visited {
 		visited[i] = make([]bool, n)
 	}
 
 	return &Boggle{
-		found:   map[string]struct{}{},
-		board:   board,
-		visited: visited,
-		m:       m,
-		n:       n,
+		found:      make(map[string]struct{}),
+		board:      board,
+		visited:    visited,
+		dictionary: NewTrie(),
+		m:          m,
+		n:          n,
 	}, nil
 }
 
@@ -58,7 +50,11 @@ func (b *Boggle) Solve() []string {
 
 	for i := 0; i < b.m; i++ {
 		for j := 0; j < b.n; j++ {
-			b.findWords(i, j, runningString)
+			str := b.board[i][j]
+			index := []byte(str)[0] - 'a'
+			if node := b.dictionary.RootNode.Children[index]; node != nil {
+				b.findWords(i, j, runningString+str, node)
+			}
 		}
 	}
 
@@ -66,23 +62,46 @@ func (b *Boggle) Solve() []string {
 	return b.getFoundList()
 }
 
-func (b *Boggle) findWords(i, j int, runningString string) {
-	b.visited[i][j] = true
-	runningString += b.board[i][j]
-
-	if _, valid := dictionary[runningString]; valid && len(runningString) >= 3 {
+func (b *Boggle) findWords(i, j int, runningString string, node *Node) {
+	if node.IsWord && len(runningString) >= 3 {
 		b.found[runningString] = struct{}{}
 	}
 
-	for row := i - 1; row <= i+1 && row < len(b.board); row++ {
-		for col := j - 1; col <= j+1 && col < len(b.board[0]); col++ {
-			if row >= 0 && col >= 0 && !b.visited[row][col] {
-				b.findWords(row, col, runningString)
+	if b.isSafe(i, j) {
+		b.visited[i][j] = true
+
+		for k := 0; k < SIZE; k++ {
+			if node.Children[k] != nil {
+				ch := string(byte(k + 'a'))
+
+				if b.isSafe(i+1, j+1) && b.board[i+1][j+1] == ch {
+					b.findWords(i+1, j+1, runningString+ch, node.Children[k])
+				}
+				if b.isSafe(i, j+1) && b.board[i][j+1] == ch {
+					b.findWords(i, j+1, runningString+ch, node.Children[k])
+				}
+				if b.isSafe(i-1, j+1) && b.board[i-1][j+1] == ch {
+					b.findWords(i-1, j+1, runningString+ch, node.Children[k])
+				}
+				if b.isSafe(i+1, j) && b.board[i+1][j] == ch {
+					b.findWords(i+1, j, runningString+ch, node.Children[k])
+				}
+				if b.isSafe(i+1, j-1) && b.board[i+1][j-1] == ch {
+					b.findWords(i+1, j-1, runningString+ch, node.Children[k])
+				}
+				if b.isSafe(i, j-1) && b.board[i][j-1] == ch {
+					b.findWords(i, j-1, runningString+ch, node.Children[k])
+				}
+				if b.isSafe(i-1, j-1) && b.board[i-1][j-1] == ch {
+					b.findWords(i-1, j-1, runningString+ch, node.Children[k])
+				}
+				if b.isSafe(i-1, j) && b.board[i-1][j] == ch {
+					b.findWords(i-1, j, runningString+ch, node.Children[k])
+				}
 			}
 		}
+		b.visited[i][j] = false
 	}
-
-	b.visited[i][j] = false
 }
 
 func (b *Boggle) getFoundList() []string {
@@ -93,4 +112,8 @@ func (b *Boggle) getFoundList() []string {
 	}
 
 	return foundList
+}
+
+func (b *Boggle) isSafe(i, j int) bool {
+	return i >= 0 && i < b.m && j >= 0 && j < b.n && !b.visited[i][j]
 }

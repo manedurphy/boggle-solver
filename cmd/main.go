@@ -17,4 +17,7 @@ func main() {
 
 	app.POST("/solve", svc.Solve)
 	panic(app.Start(":8080"))
+
+	// trie := boggle.NewTrie()
+	// fmt.Println(trie.RootNode.Children)
 }
