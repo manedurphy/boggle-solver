@@ -1,15 +1,20 @@
 package service
 
 import (
-	"fmt"
 	"net/http"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/labstack/echo/v4"
 	"github.com/manedurphy/boggle-solver/pkg/boggle"
 )
 
 type (
+	Config struct {
+		Logger hclog.Logger
+	}
+
 	Service struct {
+		cfg Config
 	}
 
 	SolveRequest struct {
@@ -17,7 +22,7 @@ type (
 	}
 
 	SolveResponse struct {
-		WordsFound []string `json:"words_found"`
+		Result *boggle.Result `json:"result"`
 	}
 
 	ErrorMessage struct {
@@ -25,36 +30,41 @@ type (
 	}
 )
 
-func New() *Service {
-	return &Service{}
+func New(cfg Config) *Service {
+	return &Service{
+		cfg: cfg,
+	}
 }
 
 func (s *Service) Solve(c echo.Context) error {
 	var (
-		b          *boggle.Boggle
-		req        SolveRequest
-		wordsFound []string
-		err        error
+		b      *boggle.Boggle
+		result *boggle.Result
+		req    SolveRequest
+		err    error
 	)
 
-	fmt.Println("incoming request")
+	s.cfg.Logger.With("func", "Solve").Info("incoming request")
 
 	if err = c.Bind(&req); err != nil {
 		return c.JSON(http.StatusInternalServerError, &ErrorMessage{
 			Message: "internal server error",
 		})
 	}
+	s.cfg.Logger.Debug("boggle board", "board", req.Board)
 
 	b, err = boggle.New(req.Board)
 	if err != nil {
-		fmt.Printf("could not create new boggle game: %s\n", err)
+		s.cfg.Logger.With("err", err, "board", req.Board).Error("could not create new boggle game")
 		return c.JSON(http.StatusBadRequest, &ErrorMessage{
 			Message: "invalid boggle board submitted",
 		})
 	}
 
-	wordsFound = b.Solve()
+	result = b.Solve()
+	s.cfg.Logger.Info("successfully solved boggle board!")
+
 	return c.JSON(http.StatusOK, &SolveResponse{
-		WordsFound: wordsFound,
+		Result: result,
 	})
 }
