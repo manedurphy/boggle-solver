@@ -10,7 +10,8 @@ import (
 
 type (
 	Config struct {
-		Logger hclog.Logger
+		Logger       hclog.Logger
+		WordsZipFile string
 	}
 
 	Service struct {
@@ -55,7 +56,7 @@ func (s *Service) Solve(c echo.Context) error {
 
 	b, err = boggle.New(boggle.Config{
 		Board:        req.Board,
-		WordsZipFile: "/home/dane/Documents/interview_prep/assessments/rstudio/data/words.zip",
+		WordsZipFile: s.cfg.WordsZipFile,
 	})
 	if err != nil {
 		s.cfg.Logger.With("err", err, "board", req.Board).Error("could not create new boggle game")
