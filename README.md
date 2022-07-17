@@ -104,7 +104,7 @@ docker run --name boggle --rm -d -p 8080:8080 manedurphy/boggle-solver:optimizat
 ### Logging
 
 - There are currently only a few print statements that make up the logging. A better logging tool should be leveraged to give us better insight on what the application is doing.
-- (Revisited) - The `go-hclog` logging tool has been included in these changes.
+- (Revisited) - The [go-hclog](https://github.com/hashicorp/go-hclog) logging tool has been included in these changes.
 
 ### Configuration
 
@@ -124,9 +124,73 @@ log_level = "info"
 
 </details>
 
-## Load Testing (Optimization)
+## Load Testing 
+
+### Rough Draft
+
+- The following load tests were performed with the original implementation of the boggle solver.
+- From the `Apache Bench` command we can see that the number of requests sent is a low 50. This is because the application could not consistently handle more than this.
+
+<details>
+
+<summary>t3.medium</summary>
+
+- 6 t2.medium EC2 nodes behind an Elastic Load Balancer (ELB)
+
+```bash
+# Apache Bench Command
+ab -n 50 -c 25 -T "application/json" -p data/request.json http://boggle-114079829.us-east-1.elb.amazonaws.com/solve
+```
+
+- Results
+
+```txt
+Server Software:        
+Server Hostname:        boggle-114079829.us-east-1.elb.amazonaws.com
+Server Port:            80
+
+Document Path:          /solve
+Document Length:        41 bytes
+
+Concurrency Level:      25
+Time taken for tests:   55.404 seconds
+Complete requests:      50
+Failed requests:        0
+Total transferred:      9150 bytes
+Total body sent:        15850
+HTML transferred:       2050 bytes
+Requests per second:    0.90 [#/sec] (mean)
+Time per request:       27701.911 [ms] (mean)
+Time per request:       1108.076 [ms] (mean, across all concurrent requests)
+Transfer rate:          0.16 [Kbytes/sec] received
+                        0.28 kb/s sent
+                        0.44 kb/s total
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:       74   82   3.7     83      92
+Processing:  5378 19976 5256.2  19991   29415
+Waiting:     5377 19976 5256.3  19991   29415
+Total:       5452 20058 5257.8  20074   29498
+
+Percentage of the requests served within a certain time (ms)
+  50%  20074
+  66%  21070
+  75%  21882
+  80%  25875
+  90%  27805
+  95%  28628
+  98%  29498
+  99%  29498
+ 100%  29498 (longest request)
+```
+
+</details>
+
+### Optimization
 
 - The following load tests were performed with the new code optimizations, including the Trie Dictionary.
+- From the `Apache Bench` commands we can see that the number of requests sent is a high 10000. The application was capable of handling this kind of traffic with the optimizations in place.
 
 <details>
 
@@ -188,7 +252,7 @@ Percentage of the requests served within a certain time (ms)
 
 <summary>t3.medium</summary>
 
-- 3 t2.medium EC2 nodes behind an Elastic Load Balancer (ELB)
+- 3 t3.medium EC2 nodes behind an Elastic Load Balancer (ELB)
 
 ```bash
 # Apache Bench Command
@@ -238,17 +302,65 @@ Percentage of the requests served within a certain time (ms)
  100%   1466 (longest request)
 ```
 
+- 6 t3.medium EC2 nodes behind an Elastic Load Balancer (ELB)
+
+```bash
+# Apache Bench Command
+ab -n 10000 -c 1000 -T "application/json" -p data/request.json http://boggle-114079829.us-east-1.elb.amazonaws.com/solve
+```
+
+```txt
+Server Software:        
+Server Hostname:        boggle-114079829.us-east-1.elb.amazonaws.com
+Server Port:            80
+
+Document Path:          /solve
+Document Length:        2190 bytes
+
+Concurrency Level:      1000
+Time taken for tests:   3.369 seconds
+Complete requests:      10000
+Failed requests:        0
+Total transferred:      23120000 bytes
+Total body sent:        3470000
+HTML transferred:       21900000 bytes
+Requests per second:    2967.91 [#/sec] (mean)
+Time per request:       336.938 [ms] (mean)
+Time per request:       0.337 [ms] (mean, across all concurrent requests)
+Transfer rate:          6700.98 [Kbytes/sec] received
+                        1005.73 kb/s sent
+                        7706.70 kb/s total
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:       75  105  77.8     99    1134
+Processing:    75  168  83.3    147     924
+Waiting:       75  167  83.2    147     924
+Total:        162  273 113.8    247    1313
+
+Percentage of the requests served within a certain time (ms)
+  50%    247
+  66%    257
+  75%    266
+  80%    274
+  90%    324
+  95%    440
+  98%    639
+  99%    780
+ 100%   1313 (longest request)
+```
+
 </details>
 
 <details>
 
 <summary>t2.micro+t3.medium</summary>
 
-- 3 t2.medium EC2 nodes behind an Elastic Load Balancer (ELB)
+- 3 t2.micro and 3 t3.medium EC2 nodes behind an Elastic Load Balancer (ELB)
 
 ```bash
 # Apache Bench Command
-ab -n 10000 -c 1000 -T "application/json" -p data/request.json http://boggle-362284770.us-east-1.elb.amazonaws.com:81/solve
+ab -n 10000 -c 1000 -T "application/json" -p data/request.json http://boggle-362284770.us-east-1.elb.amazonaws.com/solve
 ```
 
 - Results
